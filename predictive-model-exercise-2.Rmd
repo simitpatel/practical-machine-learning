@@ -1,0 +1,194 @@
+---
+title: "Predicting Quality of Exercise Performance"
+author: "S. P."
+date: "Monday, June 22, 2015"
+output: html_document
+---
+
+##Summary
+
+In this paper we explain the creation of a predictive model that uses wearable tracking technology to determine the quality of various exercises the wearer completed. The data for this study was provided courtesy of the Groupware@LES Human Activity Recognition Project.    
+
+##Loading Data
+
+We start by loading libraries we may use in this project. We then loaded the data from Groupware@LES.   
+
+```{r setup}
+getwd()
+```
+
+```{r,results='hide'}
+
+#load libraries
+
+library(plyr)
+library(dplyr)
+library(ggplot2)
+library(reshape2)
+library(stringr)
+library(caret)
+library(ada)
+library (mlearning)
+
+#read files
+
+train1 <- read.csv("pml-training2.csv")
+
+test1 <- read.csv("pml-testing2.csv")
+
+```
+
+##Data Wrangling
+
+Some steps are needed to process the data to make it ready for use in a predictive model. Namely, we observe that there is a factor variables with two classes; this variable, named new_window, can be converted to a numeric variable with a value of either zero or one. Other variables that have an abundance of missing data can be dropped altogether. 
+
+```{r, results='hide'}
+train1 <- train1[, colSums(is.na(train1)) == 0]
+train1 <- train1[, -c(1:5)]
+train1 <- select(train1,-starts_with("kurtosis"))
+train1 <- select(train1,-starts_with("skewness"))
+train1 <- train1[,-c(7:9)]
+train1 <- train1[,-c(32:34)]
+train1 <- train1[,-c(45:47)]
+
+ifelse(train1$new_window=="yes",mutate(train1,new_window==1),mutate(train1,new_window==0))
+
+```
+
+For consistency, we then apply these same measures to the testing data set.  
+
+```{r, results='hide'}
+testing <- test1
+testing <- testing[, colSums(is.na(testing)) == 0]
+testing <- testing[, -c(1:5)]
+testing <- select(testing,-starts_with("kurtosis"))
+testing <- select(testing,-starts_with("skewness"))
+testing <- testing[,-c(7:9)]
+testing <- testing[,-c(32:34)]
+testing <- testing[,-c(45:47)]
+
+#testing$new_window <- gsub("no",0,testing$new_window)
+#testing$new_window <- gsub("yes",1,testing$new_window)
+#testing$new_window <- as.numeric(testing$new_window)
+
+```
+##Partition Data
+
+Our next step is to further partition our training data. This is done to enable a validation data set, which we can use to build a stacked model, and to create a smaller initial training set that will allow for ideas to be tested more quickly than it could be on a very large data set. 
+
+```{r, results='hide'}
+#partition training set
+
+split1 <- createDataPartition(y=train1$classe, p=0.7, list=FALSE)
+training<-train1[split1,]
+validation<-train1[-split1,]
+
+
+split2 <- createDataPartition(y=training$classe, p=0.2, list=FALSE)
+smalltraining<- training[split2,]
+bigtraining<- training[-split2,]
+```
+
+
+##Initial Attempt: Decision Tree
+
+The first step taken was to build a predictive model off a simple decision tree, solving for the classe variable using all other variables. When the fitted values of this model, named mod3, were compared against the against the actual values in the small training data set, the results included an Accuracy score of .5767.   
+
+```{r}
+set.seed(12345)
+mod3 <- train(classe~.,method="rpart",data=smalltraining)
+cm_mod3 <- confusionMatrix(fitted(mod3),smalltraining$classe)
+```
+
+##Second Attempt: Random Forests
+
+Next, we ran a random forests model on the small training data set, and compared the predicted outcomes against the actuals. The in sample Accuracy rate was 1; this clearly reflects overfitting. 
+
+```{r}
+set.seed(123456)
+mod2 <- train(classe~.,method="rf",data=smalltraining)
+cm_mod2 <- confusionMatrix(fitted(mod2),smalltraining$classe)
+```
+
+##Third Attempt: Linear Discrimant Analysis
+
+Lastly, we ran a linear discrimant analysis regression on the small training data set, and compared the predicted outcomes against the actuals. Even though the data does not really have a normal distribution -- seea frequency plot in the Appendix -- the in sample Accuracy rate was .7244. 
+
+
+```{r}
+set.seed(1234)
+mod4 <- train(classe~.,method="lda",data=smalltraining)
+cm_mod4 <- confusionMatrix(fitted(mod4),smalltraining$classe)
+classe_hist <- barplot(prop.table(table(smalltraining$classe)))
+```
+
+##Predicting on the Validation Set
+
+With these three models in place, the next step is to run them against the validation model complete with confusion matrices, so as to offer an out of sample error rate. Here, we see that the accuracy rate for mod2, the random forests model, has soared to .9711. The LDA model, mod4, comes in at .7057, while the decision trees model, mod3, came in at .5801.         
+
+```{r}
+pmod4 <- predict(mod4,newdata=validation)
+pmod2 <- predict(mod2,newdata=validation)
+pmod3 <- predict(mod3,newdata=validation)
+
+cm_pmod4 <- confusion(pmod4,validation$classe)
+cm_pmod2 <- confusion(pmod2,validation$classe)
+cm_pmod3 <- confusion(pmod3,validation$classe)
+
+```
+
+#Re-training Random Forests on a Larger Set
+
+In light of how well the random forests model worked, we opted to re-train the model using the bigtraining data set, so as to further improve its accuracy. After doing so, we ran the new model, rfbt, on the validation data set. The result was an Accuracy score of .9963. 
+
+```{r}
+rfbt <- train(classe~.,method="rf",data=bigtraining)
+prfbt <- predict(rfbt,newdata=validation)
+cm_prfbt <- confusion(prfbt,validation$classe)
+```
+
+#Applying Model to Test Set
+
+Finally, we apply the model we have selected, named rfbt, to the test set. We store the results in a variable named frfbt. 
+
+```{r}
+frfbt <- predict(rfbt,newdata=testing)
+```
+
+The contents of frfbt, which are the results predicted for the testing set using the model we created and discussed in this paper, are included in the submissions portion of this project. 
+
+#Appendix
+
+Figure 1: The distribution of the classe variable in the small training data set. Note that it is uniform and not gaussian; as such, linear discriminant analysis may not be the best fit. 
+
+```{r,echo=FALSE}
+classe_hist
+```
+
+Figure 2: The confusion matrix for the linear discrimant analysis model (mod4) applied to the validation data set. 
+
+```{r,echo=FALSE}
+cm_pmod4
+confusionBarplot(cm_pmod4)
+```
+
+Figure 3: The confusion matrix for the decision tree model (mod3) applied to the validation data set. 
+
+```{r,echo=FALSE}
+cm_pmod3
+confusionBarplot(cm_pmod3)
+```
+
+Figure 4: The confusion matrix for the random forests (mod3) applied to the validation data set. 
+
+```{r,echo=FALSE}
+cm_pmod2
+confusionBarplot(cm_pmod2)
+```
+
+Figure 5: The confusion matrix for the second and final random forests  model (mod3) applied to the validation data set, after being trained on the big training data set. 
+
+```{r,echo=FALSE}
+cm_prfbt
+confusionBarplot(cm_prfbt)
+```
