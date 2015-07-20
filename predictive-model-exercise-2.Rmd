@@ -13,10 +13,6 @@ In this paper we explain the creation of a predictive model that uses wearable t
 
 We start by loading libraries we may use in this project. We then loaded the data from Groupware@LES.   
 
-```{r setup}
-getwd()
-```
-
 ```{r,results='hide'}
 
 #load libraries
