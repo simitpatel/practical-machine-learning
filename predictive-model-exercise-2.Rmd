@@ -139,7 +139,7 @@ cm_pmod3 <- confusion(pmod3,validation$classe)
 
 #Re-training Random Forests on a Larger Set
 
-In light of how well the random forests model worked, we opted to re-train the model using the bigtraining data set, so as to further improve its accuracy. After doing so, we ran the new model, rfbt, on the validation data set. The result was an Accuracy score of .9963. 
+In light of how well the random forests model worked, we opted to re-train the model using the bigtraining data set, so as to further improve its accuracy. After doing so, we ran the new model, rfbt, on the validation data set. The result was an Accuracy score of .9963. Thus, we expect an out of sample error rate of to be 0.37%.  
 
 ```{r}
 rfbt <- train(classe~.,method="rf",data=bigtraining)
