@@ -1,7 +1,7 @@
 ---
 title: "Predicting Quality of Exercise Performance"
 author: "S. P."
-date: "Monday, June 22, 2015"
+date: "Sunday, July 19, 2015"
 output: html_document
 ---
 
