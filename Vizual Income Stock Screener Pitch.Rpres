@@ -1,0 +1,32 @@
+Vizual Income Stock Screener Pitch
+========================================================
+author: S.P.
+date: Sept 10, 2015
+
+Why a Visual Income Stock Screener?
+========================================================
+
+- Conduct exploratory data analysis on dividend stocks
+- Quickly compare dividend stocks based on risk profile and income opportunity
+
+
+How it Works
+========================================================
+
+Screen for dividend stocks based on key investment parameters. 
+
+- Explore the relationship between yield, market capitalization, and price/sales ratio.
+- Use input filters to define rules to filter for. 
+- Helps investors find stocks that meet their investment criteria. 
+
+Demo the App
+========================================================
+
+<iframe src="https://simitpatel.shinyapps.io/screener-shiny" width="1250" height="700"></iframe>
+
+Understanding the Output
+========================================================
+
+- High on y-axis signals high yield
+- Larger = bigger, more stable company
+- Dark blue means share price is cheap relative to sales; light blue means it's expensive relative to sales
